@@ -62,8 +62,10 @@ class SyncAsyncAwaitDemoWindow:
             elif event == "-submit_long_run-":
                 self._on_submit_long_run(event, values)
             elif event == "-done_long_run-":
-                pass
-                #self._on_done_long_sync(event, values)
+                self.end = time.time()
+                elapsed = f"{(self.end - self.start):.2f} seconds"
+                self.window["-output-"].update(values[event])
+                self.window["-time_output-"].update(elapsed)
 
     def _on_submit_sync(self, event, values):
         """On submit sync"""
@@ -92,15 +94,35 @@ class SyncAsyncAwaitDemoWindow:
 
     def _on_submit_thread(self, event, values):
         """On submit thread"""
-        pass
+        self.start = time.time()
+        self.progress = 0
+        self.window["-output-"].update("Fetching Name Threaded")
+        self.window["-time_output-"].update("Calculating...")
+        task = threading.Thread(
+            target=self._get_name_thread,
+            args=(), # For method above
+        )
+        task.start() # Makes thread
 
     def _on_submit_thread_async(self, event, values):
         """On submit thread async"""
-        pass
+        self.start = time.time()
+        self.progress = 0
+        self.window["-output-"].update("Fetching Name Threaded and Async")
+        self.window["-time_output-"].update("Calculating...")
+        task = threading.Thread(
+            target=self._get_name_thread_and_async,
+            args=(), # For method above
+        )
+        task.start() # Makes thread
 
     def _on_submit_long_run(self, event, values):
         """On submit long run"""
-        pass
+        self.start = time.time()
+        self.progress = 0
+        self.window["-output-"].update("Fetching Name Long Running")
+        self.window["-time_output-"].update("Calculating...")
+        self.window.perform_long_operation(self._get_name, "-done_long_run-")
 
 
     # The simulated long-running task methods are below.
@@ -149,3 +171,21 @@ class SyncAsyncAwaitDemoWindow:
             self.progress += 5
             self.window["-progress-"].update(self.progress)
         return "Barnes"
+    
+    def _get_name_thread(self):
+        """Get name from long running task using a separate thread from the UI thread."""
+        first = self._get_first_name()
+        last = self._get_last_name()
+        self.end = time.time()
+        elapsed = f"{(self.end - self.start):.2f} seconds"
+        self.window["-output-"].update(f"{first} {last}")
+        self.window["-time_output-"].update(elapsed)
+
+    def _get_name_thread_and_async(self):
+        """Get name from long running task using a separate thread from the UI thread.
+        And also using asyncio."""
+        name = asyncio.run(self._get_name_async())
+        self.end = time.time()
+        elapsed = f"{(self.end - self.start):.2f} seconds"
+        self.window["-output-"].update(f"{name}")
+        self.window["-time_output-"].update(elapsed)
